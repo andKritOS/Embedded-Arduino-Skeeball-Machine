@@ -1,0 +1,242 @@
+//ARDUINO 1
+#include <Servo.h>
+//#include <Stepper.h>
+
+//ALL RELEVENT ADJUSTABLE VARIABLES ARE AVAILABLE HERE, NO NEED TO ADJUST OTHER ELEMENTS
+//--------------------------------------------------------------------------------------------------------
+//adjustable primary variables
+
+#define gateClosedPos 30 //adjustable gate closed position
+#define gateOpenPos 0 //adjustable gate open position
+//#define motorIncr 2 //the amount at which the motor speed will be incremented each time
+//#define steps 1024 //sets the amount of steps in stepper motor
+#define baudRate 9600 //baud rate between both arduino serial pins
+#define mrblRlsTime 4000 //Amount of time the ball release will wait between open and close
+const int stprFactor = 0.1;
+const int scoreHoleScore[5] = {20,30,10,50,40}; // score values for each 
+//--------------------------------------------------------------------------------------------------------
+//sounds
+//const int photoThresh[5] = {130,130,130,130,130}; //adjustable value for acceptable photoresistor coinslot operation, debounced in code
+//const int coinThresh = 130;
+const int photoBounceThresh[6] = {4,4,5,5,5,10}; //the minimum value at which the photoresistor levels need to change to register an entry
+const int scoreHoleSound[5] = {587,659,523,880,784}; // score values for each 
+#define SHORT_NOTE_DURATION 200
+#define LONG_NOTE_DURATION 500
+
+//NOTE_C5  523,NOTE_D5  587, NOTE_E5  659, NOTE_G5  784, NOTE_A5  880
+
+//--------------------------------------------------------------------------------------------------------
+//adjustable pin assignments
+
+const int scoreHolePins[5] = {A2,A0,A4,A3,A1}; //a0 thru a4 photo pins 
+
+#define coinSlotPin A5 //a5 photo pin on analog
+
+#define SERVO_PIN 3 // the pin which servo motor is connected, PWM digital
+#define PIEZO_PIN 5 //piezo buzzer pin
+#define STEPPER_PIN 10 //pin that communicates to stepper ardunino
+
+//Digital_1 Serial Output to Arduino 3
+//Digital_0 Serial Input from Arduino 3
+
+//Analog 1 for 10 point photoresistor
+//Analog 2 for 20 point photoresistor
+//Analog 3 for 30 point photoresistor
+//Analog 4 for 40 point photoresistor
+//Analog 5 for 50 point photoresistor
+
+//--------------------------------------------------------------------------------------------------------
+//environment variables (DO NOT TOUCH)
+
+int gamesRemaining = 0; //number of games left to play given the number of coins in coinslot.
+bool gameInProgress = false; //communication value to signal game is in progress.
+int gameBallCount = 0; //the number of balls that have been detected this game.
+int gameScore; //current game score
+int newScore; //value of the most recent score
+int stepSpeed;
+
+//--------------------------------------------------------------------------------------------------------
+//device declarations
+
+//Stepper stepper(steps, 8, 10, 9, 11); // declares stepper w/ parameters
+Servo gate;  // create servo object 
+
+//--------------------------------------------------------------------------------------------------------
+
+void setup() {
+
+pinMode(SERVO_PIN,INPUT); //mounts servo
+pinMode(PIEZO_PIN, OUTPUT); //mounts piezo buzzer
+pinMode(STEPPER_PIN, OUTPUT);
+gate.attach(SERVO_PIN);  //attaches the servo on pin 2 to the servo object
+gate.write(gateClosedPos); //immediately closes marble gate
+
+Serial.begin(9600); //initiates baudrate
+
+}
+
+//----------------------------------------------------
+void loop() {
+delay(100);
+coinCheck();
+if (gameInProgress == true){
+
+checkMarbleState();
+updateStepper();
+ 
+}
+if (gameBallCount == 10){
+endGame();
+}
+}
+
+//----------------------------------------------------
+//primary logic functions
+
+void checkMarbleState(){
+
+for (int i = 0; i <= 4; i++){
+
+  if (photoBounceChk(i,i) == 1 ){
+
+      newScore = scoreHoleScore[i];
+      gameScore += newScore;
+      gameBallCount += 1;
+      updateStepper();
+      updateScoreBoard(); 
+      scoreSound(i);
+
+  }
+}  
+}
+
+void updateScoreBoard() {
+
+  Serial.println(gameScore);
+  if(gameInProgress == false){
+    Serial.println(9999);
+  }
+}
+
+void coinCheck() {
+
+if(photoBounceChk(coinSlotPin,5) == 1){
+      gamesRemaining += 1;
+    if(gameInProgress == false){
+      beginGame();   
+    }
+    else{
+      gamesRemaining += 1;
+
+    }
+  }
+}
+
+void beginGame() {
+  startSound();
+  Serial.println(0);
+  gamesRemaining -= 1;
+  gameInProgress = true; 
+  releaseMarbles();
+}
+
+void endGame() {
+  gameInProgress = false; 
+  gameScore = 0;
+  gameBallCount = 0;
+  newScore = 0;
+  Serial.println(0);
+  delay(5);
+  endSound();
+}
+
+
+//--------------------------------------------------------------------------------------------------------
+//motor functions
+void updateStepper() {
+
+if (gameInProgress == true){
+  digitalWrite(STEPPER_PIN,HIGH);
+  delay (15);
+  digitalWrite(STEPPER_PIN,LOW);
+}
+else{
+  //STEPPER SPEED TO ZERO
+}
+//stepper.step(256);
+}
+
+void releaseMarbles() {
+
+    gate.write(gateOpenPos);
+    delay(mrblRlsTime);
+    gate.write(gateClosedPos);
+
+}
+
+//--------------------------------------------------------------------------------------------------------
+//sounds
+void playSound(int frequency, int duration) {
+
+  tone(PIEZO_PIN, frequency, duration);
+  delay(duration + 10); // Add a small delay to distinguish between consecutive sounds
+}
+
+void startSound() {
+//plays a sound to indicate starting a new game
+  playSound(scoreHoleSound[0], SHORT_NOTE_DURATION);
+  delay(10);
+  playSound(scoreHoleSound[1], SHORT_NOTE_DURATION);
+  delay(5);
+  playSound(scoreHoleSound[2], SHORT_NOTE_DURATION);
+  delay(5);
+  playSound(scoreHoleSound[3], SHORT_NOTE_DURATION);
+  delay(5);
+  playSound(scoreHoleSound[4], SHORT_NOTE_DURATION);
+  delay(10);
+  playSound(scoreHoleSound[3], SHORT_NOTE_DURATION);
+  delay(10);
+  playSound(scoreHoleSound[4], SHORT_NOTE_DURATION);
+  delay(10);
+
+}
+
+void scoreSound(int scoreHole) {
+//plays a sound to indicate scoring a point
+
+playSound(scoreHoleSound[scoreHole] , SHORT_NOTE_DURATION);
+}
+
+void endSound() {
+//plays a sound to indicate ending a game  
+  playSound(scoreHoleSound[4], SHORT_NOTE_DURATION);
+  delay(10);
+  playSound(scoreHoleSound[3], SHORT_NOTE_DURATION);
+  delay(5);
+  playSound(scoreHoleSound[2], SHORT_NOTE_DURATION);
+  delay(5);
+  playSound(scoreHoleSound[1], SHORT_NOTE_DURATION);
+  delay(5);
+  playSound(scoreHoleSound[0], SHORT_NOTE_DURATION);
+  delay(10);
+  playSound(scoreHoleSound[1], SHORT_NOTE_DURATION);
+  delay(10);
+  playSound(scoreHoleSound[2], SHORT_NOTE_DURATION);
+  delay(10);
+
+}
+//--------------------------------------------------------------------------------------------------------
+int photoBounceChk(int pin, int thresh){
+  
+int a,b;
+a = analogRead(pin);
+delay(5);
+b = analogRead(pin);
+
+if (abs(a - b) >= photoBounceThresh[thresh]){
+return 1; 
+}
+else{
+return 0;
+}    
+}
