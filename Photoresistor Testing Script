@@ -1,0 +1,60 @@
+
+int a;
+int b;
+
+void setup() {
+Serial.begin(9600);
+
+}
+
+//----------------------------------------------------
+void loop() {
+
+Serial.print("A0: ");
+a = analogRead(A0);
+delay(5);
+b = analogRead(A0);
+Serial.print(abs(a-b));
+Serial.print(" ");
+
+Serial.print("A1: ");
+a = analogRead(A1);
+delay(5);
+b = analogRead(A1);
+Serial.print(abs(a-b));
+Serial.print(" ");
+
+Serial.print("A2: ");
+a = analogRead(A2);
+delay(5);
+b = analogRead(A2);
+Serial.print(abs(a-b));
+Serial.print(" ");
+
+Serial.print("A3: ");
+a = analogRead(A3);
+delay(5);
+b = analogRead(A3);
+Serial.print(abs(a-b));
+Serial.print(" ");
+
+Serial.print("A4: ");
+a = analogRead(A4);
+delay(5);
+b = analogRead(A4);
+Serial.print(abs(a-b));
+Serial.print(" ");
+
+Serial.print("A5: ");
+a = analogRead(A5);
+delay(5);
+b = analogRead(A5);
+Serial.print(abs(a-b));
+Serial.print(" ");
+
+Serial.println(" ");
+
+delay(100);
+}
+//--------------------------------------------------------------------------------------------------------
+//motor functions
