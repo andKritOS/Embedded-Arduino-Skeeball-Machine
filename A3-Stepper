@@ -1,0 +1,36 @@
+#include <Stepper.h>
+
+#define steps 1024 //sets the amount of steps in stepper motor
+const int stprFactor = 0.8;
+int gameScore;
+//--------------------------------------------------------------------------------------------------------
+//device declarations
+
+Stepper stepper(steps, 8, 10, 9, 11); // declares stepper w/ parameters
+
+//--------------------------------------------------------------------------------------------------------
+
+void setup() {
+gameScore = 0;
+Serial.begin(9600);
+
+}
+
+//----------------------------------------------------
+void loop() {
+if (Serial.available()){
+gameScore = Serial.read();
+}
+
+if (gameScore == 0){
+stepper.step(0);
+stepper.setSpeed(1);
+}
+else if(gameScore > 0){
+stepper.step(256);
+stepper.setSpeed(5 + ceil((stprFactor*gameScore)));
+}
+
+}
+//--------------------------------------------------------------------------------------------------------
+//motor functions
