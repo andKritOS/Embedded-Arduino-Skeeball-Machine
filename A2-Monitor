@@ -1,0 +1,24 @@
+#include <LiquidCrystal.h>
+
+const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2; // Adjust pins based on your LCD
+LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
+
+int stprFactor = 0.8;
+char gameScore;
+
+void setup() {
+  Serial.begin(9600); // Set baud rate for serial communication
+  lcd.begin(16, 2); // Initialize LCD (size depends on your display)
+}
+
+void loop() {
+  if (Serial.available() > 0) { // Check if data is available
+    gameScore = Serial.parseInt();
+
+  }
+    lcd.print("Score: ");
+    lcd.print(gameScore);
+    lcd.setCursor(0,2);
+    lcd.print("Ramp Speed: ");
+    lcd.print(5 + ceil((stprFactor*gameScore)));
+}
